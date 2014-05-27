@@ -16,9 +16,9 @@ def get_shitlist
   JSON.parse(json)
 end
 
-def replace_track(track, speaker, replacements)
+def replace_track(track, speaker, replacements, position)
   speaker.remove_from_queue(track[:queue_id])
-  speaker.add_spotify_to_queue({:id => replacements.sample})
+  speaker.add_spotify_to_queue({ id: replacements.sample }, position)
 end
 
 options = {}
@@ -61,7 +61,7 @@ swapsies = {
   ]
 }
 
-def to_swap(title)
+def replacements_for(title, swapsies)
   swapsies.each_pair do |k, v|
     return v if k.start_with? title
   end
@@ -96,15 +96,15 @@ threads << Thread.new do
     shitlist = @mutex.synchronize { @shitlist }
     speaker  = system.find_party_master
 
-    speaker.queue[:items].each do |track|
+    speaker.queue[:items].each_with_index do |track, index|
       if shitlist.any? { |s| track[:title].start_with? s }
-        swap_to = to_swap(s)
-        if options[:swapsies] && !swap_to.nil?
+        if options[:swapsies] && swapsies.keys.any? { |s| track[:title].start_with? s }
           log "Swapping '#{track[:title]}'."
-          replace_track(track, speaker, swap_to)
+          replacements = replacements_for(track[:title], swapsies)
+          replace_track(track, speaker, replacements, index + 1)
         elsif options[:top_gun]
           log "Found '#{track[:title]}', top-gunizing this shit."
-          replace_track(track, speaker, top_gun)
+          replace_track(track, speaker, top_gun, index + 1)
         else
           log "Found '#{track[:title]}', removing that shit."
           speaker.remove_from_queue(track[:queue_id])
