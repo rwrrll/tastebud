@@ -27,6 +27,9 @@ OptionParser.new do |opts|
   opts.on("--top-gun") do |v|
     options[:top_gun] = true
   end
+  opts.on("--swapsies") do |v|
+    options[:swapsies] = true
+  end
 end.parse!
 
 top_gun = [
@@ -44,6 +47,26 @@ top_gun = [
   '6bSRamvdbeVlza5P5Bfq5P',
   '1vBQ620eF9zfP4L3w5TTyI'
 ]
+
+swapsies = {
+  'I Disappear' => [
+    '0zkiQH567SDLqfWNBaU3hv', # Selfie
+    '38GIXryQTvtuteKojD6YIv'  # Jamie's Cryin
+  ],
+  'Story of My Life' => [
+    '2XxvG64l8WtfZnotwakB9g'  # SamRick
+  ],
+  'Magic' => [
+    '4ob9Bn36rQ9JaeveIllUhf'  # The Wolf I Feed
+  ]
+}
+
+def to_swap(title)
+  swapsies.each_pair do |k, v|
+    return v if k.start_with? title
+  end
+end
+
 
 log "Initialising..."
 threads   = []
@@ -75,7 +98,11 @@ threads << Thread.new do
 
     speaker.queue[:items].each do |track|
       if shitlist.any? { |s| track[:title].start_with? s }
-        if options[:top_gun]
+        swap_to = to_swap(s)
+        if options[:swapsies] && !swap_to.nil?
+          log "Swapping '#{track[:title]}'."
+          replace_track(track, speaker, swap_to)
+        elsif options[:top_gun]
           log "Found '#{track[:title]}', top-gunizing this shit."
           replace_track(track, speaker, top_gun)
         else
