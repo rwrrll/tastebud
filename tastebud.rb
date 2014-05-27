@@ -3,6 +3,7 @@
 require 'bundler'
 require 'net/http'
 require 'json'
+require 'optparse'
 Bundler.require
 
 def log(message)
@@ -14,6 +15,35 @@ def get_shitlist
   json = Net::HTTP.get uri
   JSON.parse(json)
 end
+
+def replace_track(track, speaker, replacements)
+  speaker.remove_from_queue(track[:queue_id])
+  speaker.add_spotify_to_queue({:id => replacements.sample})
+end
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.on("--top-gun") do |v|
+    options[:top_gun] = true
+  end
+end.parse!
+
+top_gun = [
+  '3Y3xIwWyq5wnNHPp5gPjOW',
+  '5fRj17ipiGHroKx9u8LkHk',
+  '17jHbSrAeRrVhi1omLXQEo',
+  '4SaQmpjro3GYFt3Eyvk2g2',
+  '1AAEWUVZpew24mP6nC1IU5',
+  '5UAJauBWyIroPQwWWdBuz2',
+  '5kZkogOFoQP25LDxi6EYgK',
+  '6nuykILnip6FtXvMrHty3L',
+  '07HD5lOaZ4D94KGHUJ5UG2',
+  '6lKtMV1tpaZtMusLUDBHSb',
+  '5rBrs0mDpHlKVL5mQFbjuE',
+  '6bSRamvdbeVlza5P5Bfq5P',
+  '1vBQ620eF9zfP4L3w5TTyI'
+]
 
 log "Initialising..."
 threads   = []
@@ -45,8 +75,13 @@ threads << Thread.new do
 
     speaker.queue[:items].each do |track|
       if shitlist.any? { |s| track[:title].start_with? s }
-        log "Found '#{track[:title]}', removing that shit."
-        speaker.remove_from_queue(track[:queue_id])
+        if options[:top_gun]
+          log "Found '#{track[:title]}', top-gunizing this shit."
+          replace_track(track, speaker, top_gun)
+        else
+          log "Found '#{track[:title]}', removing that shit."
+          speaker.remove_from_queue(track[:queue_id])
+        end
       end
     end
 
