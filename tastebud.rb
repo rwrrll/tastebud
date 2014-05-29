@@ -67,6 +67,11 @@ def replacements_for(title, swapsies)
   end
 end
 
+class String
+  def is_in?(list)
+    list.any? { |item| /^#{item}/i.match(self) }
+  end
+end
 
 log "Initialising..."
 threads   = []
@@ -97,8 +102,8 @@ threads << Thread.new do
     speaker  = system.find_party_master
 
     speaker.queue[:items].each_with_index do |track, index|
-      if shitlist.any? { |s| track[:title].start_with? s }
-        if options[:swapsies] && swapsies.keys.any? { |s| track[:title].start_with? s }
+      if track[:title].is_in?(shitlist)
+        if options[:swapsies] && track[:title].is_in?(swapsies.keys)
           log "Swapping '#{track[:title]}'."
           replacements = replacements_for(track[:title], swapsies)
           replace_track(track, speaker, replacements, index + 1)
